@@ -22,15 +22,16 @@ func main() {
 }
 
 func run() error {
-	tx := Tx{
-		FromID: "Bill",
-		ToID:   "Aaron",
-		Value:  1000,
-	}
 
 	privateKey, err := crypto.LoadECDSA("zblock/accounts/kennedy.ecdsa")
 	if err != nil {
 		return fmt.Errorf("unable to load private key for node: %w", err)
+	}
+
+	tx := Tx{
+		FromID: "Bill",
+		ToID:   "Aaron",
+		Value:  1000,
 	}
 
 	data, err := json.Marshal(tx)
@@ -48,6 +49,13 @@ func run() error {
 
 	fmt.Println(string(sig))
 	fmt.Println(hexutil.Encode(sig))
+
+	publicKey, err := crypto.SigToPub(v, sig)
+	if err != nil {
+		return fmt.Errorf("unable to pub: %w", err)
+	}
+
+	fmt.Println("PUB:", crypto.PubkeyToAddress(*publicKey).String())
 
 	return nil
 }
