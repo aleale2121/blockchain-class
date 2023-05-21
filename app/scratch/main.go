@@ -29,7 +29,7 @@ func run() error {
 	}
 
 	tx := Tx{
-		FromID: "Bill",
+		FromID: "9f332e3700d8fc2446eaf6d15034cf96e0c2745e40353deef032a5dbf1dfed93",
 		ToID:   "Aaron",
 		Value:  1000,
 	}
@@ -57,5 +57,54 @@ func run() error {
 
 	fmt.Println("PUB:", crypto.PubkeyToAddress(*publicKey).String())
 
+	tx = Tx{
+		FromID: "9f332e3700d8fc2446eaf6d15034cf96e0c2745e40353deef032a5dbf1dfed93",
+		ToID:   "Frank",
+		Value:  250,
+	}
+
+	data, err = json.Marshal(tx)
+	if err != nil {
+		return fmt.Errorf("unable to marshal: %w", err)
+	}
+
+	v2 := crypto.Keccak256(data)
+
+	sig2, err := crypto.Sign(v2, privateKey)
+
+	if err != nil {
+		return fmt.Errorf("unable to sign: %w", err)
+	}
+
+	fmt.Println(string(sig2))
+	fmt.Println(hexutil.Encode(sig2))
+
+	publicKey, err = crypto.SigToPub(v2, sig2)
+	if err != nil {
+		return fmt.Errorf("unable to pub: %w", err)
+	}
+
+	fmt.Println("PUB:", crypto.PubkeyToAddress(*publicKey).String())
+	// over the wire =======================================
+
+	tx2 := Tx{
+		FromID: "9f332e3700d8fc2446eaf6d15034cf96e0c2745e40353deef032a5dbf1dfed93",
+		ToID:   "Frank",
+		Value:  250,
+	}
+
+	data, err = json.Marshal(tx2)
+	if err != nil {
+		return fmt.Errorf("unable to marshal: %w", err)
+	}
+
+	v2 = crypto.Keccak256(data)
+
+	publicKey, err = crypto.SigToPub(v2, sig2)
+	if err != nil {
+		return fmt.Errorf("unable to pub: %w", err)
+	}
+
+	fmt.Println("PUB:", crypto.PubkeyToAddress(*publicKey).String())
 	return nil
 }
