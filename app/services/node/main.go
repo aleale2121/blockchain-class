@@ -61,7 +61,8 @@ func run(log *zap.SugaredLogger) error {
 			PrivateHost     string        `conf:"default:0.0.0.0:9080"`
 		}
 		State struct {
-			Beneficiary string `conf:"default:miner1"` // Change to POA to run Proof of Authority
+			Beneficiary    string `conf:"default:miner1"` // Change to POA to run Proof of Authority
+			SelectStrategy string `conf:"default:Tip"`
 		}
 		NameService struct {
 			Folder string `conf:"default:zblock/accounts/"`
@@ -138,13 +139,13 @@ func run(log *zap.SugaredLogger) error {
 		BeneficiaryID:  database.PublicKeyToAccountID(privateKey.PublicKey),
 		Genesis:        genesis,
 		EvHandler:      ev,
+		SelectStrategy: cfg.State.SelectStrategy,
 	})
 	if err != nil {
 		return err
 	}
 
 	defer state.Shutdown()
-
 
 	// =========================================================================
 	// Start Debug Service
