@@ -7,6 +7,7 @@ import (
 
 	"github.com/ardanlabs/blockchain/app/services/node/handlers/v1/private"
 	"github.com/ardanlabs/blockchain/app/services/node/handlers/v1/public"
+	"github.com/ardanlabs/blockchain/foundation/blockchain/nameservice"
 	"github.com/ardanlabs/blockchain/foundation/blockchain/state"
 	"github.com/ardanlabs/blockchain/foundation/web"
 	"go.uber.org/zap"
@@ -18,12 +19,13 @@ const version = "v1"
 type Config struct {
 	Log   *zap.SugaredLogger
 	State *state.State
+	NS    *nameservice.NameService
 }
 
 // PublicRoutes binds all the version 1 public routes.
 func PublicRoutes(app *web.App, cfg Config) {
 	pbl := public.Handlers{
-		Log: cfg.Log,
+		Log:   cfg.Log,
 		State: cfg.State,
 	}
 
