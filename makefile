@@ -21,6 +21,14 @@ SHELL := /bin/bash
 # curl -il -X GET http://localhost:9080/v1/node/sample
 #
 
+# Bookeeping transactions
+# curl -il -X GET http://localhost:8080/v1/genesis/list
+# curl -il -X GET http://localhost:9080/v1/node/status
+# curl -il -X GET http://localhost:8080/v1/accounts/list
+# curl -il -X GET http://localhost:8080/v1/tx/uncommitted/list
+# curl -il -X GET http://localhost:8080/v1/blocks/list
+# curl -il -X GET http://localhost:9080/v1/node/block/list/1/latest
+#
 # ==============================================================================
 # Local support
 run:
