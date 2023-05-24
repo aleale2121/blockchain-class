@@ -27,6 +27,7 @@ func PublicRoutes(app *web.App, cfg Config) {
 	pbl := public.Handlers{
 		Log:   cfg.Log,
 		State: cfg.State,
+		NS:    cfg.NS,
 	}
 
 	app.Handle(http.MethodGet, version, "/genesis/list", pbl.Genesis)
