@@ -16,6 +16,14 @@ import (
 // occur in the processing of persisting blocks.
 type EventHandler func(v string, args ...any)
 
+// Worker interface represents the behavior required to be implemented by any
+// package providing support for mining, peer updates, and transaction sharing.
+type Worker interface {
+	Shutdown()
+	SignalStartMining()
+	SignalCancelMining()
+}
+
 // Config represents the configuration required to start
 // the blockchain node.
 type Config struct {
@@ -35,6 +43,8 @@ type State struct {
 
 	genesis genesis.Genesis
 	db      *database.Database
+
+	Worker  Worker
 }
 
 // New constructs a new blockchain for data management.
@@ -78,7 +88,16 @@ func New(cfg Config) (*State, error) {
 func (s *State) Shutdown() error {
 	s.evHandler("state: shutdown: started")
 	defer s.evHandler("state: shutdown: completed")
+	// Make sure the database file is properly closed.
+	// defer func() {
+	// 	s.db.Close()
+	// }()
 
+	// Stop all blockchain writing activity.
+	s.Worker.Shutdown()
+
+	// Wait for any resync to finish.
+	// s.resyncWG.Wait()
 	return nil
 }
 
@@ -105,4 +124,9 @@ func (s *State) UpsertMempool(tx database.BlockTx) error {
 // Accounts returns a copy of the database accounts.
 func (s *State) Accounts() map[database.AccountID]database.Account {
 	return s.db.Copy()
+}
+
+// LatestBlock returns a copy the current latest block.
+func (s *State) LatestBlock() database.Block {
+	return s.db.LatestBlock()
 }

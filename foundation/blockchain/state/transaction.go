@@ -1,8 +1,6 @@
 package state
 
 import (
-	"context"
-
 	"github.com/ardanlabs/blockchain/foundation/blockchain/database"
 )
 
@@ -27,17 +25,7 @@ func (s *State) UpsertWalletTransaction(signedTx database.SignedTx) error {
 	}
 
 	// s.Worker.SignalShareTx(tx)
-	// s.Worker.SignalStartMining()
-
-	// HACK
-	if s.mempool.Count()==6{
-		go func() {
-			s.MineNewBlock(context.Background())
-			s.mempool.Truncate()
-		}()
-
-	}
-
+	s.Worker.SignalStartMining()
 
 	return nil
 }

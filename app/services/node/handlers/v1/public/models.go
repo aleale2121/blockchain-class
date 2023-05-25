@@ -9,6 +9,13 @@ type act struct {
 	Nonce   uint64             `json:"nonce"`
 }
 
+
+type actInfo struct {
+	LastestBlock string `json:"lastest_block"`
+	Uncommitted  int    `json:"uncommitted"`
+	Accounts     []act  `json:"accounts"`
+}
+
 type tx struct {
 	FromAccount database.AccountID `json:"from"`
 	FromName    string             `json:"from_name"`
