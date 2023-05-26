@@ -21,6 +21,8 @@ type EventHandler func(v string, args ...any)
 // package providing support for mining, peer updates, and transaction sharing.
 type Worker interface {
 	Shutdown()
+	Sync()
+	SignalShareTx(blockTx database.BlockTx)
 	SignalStartMining()
 	SignalCancelMining()
 }

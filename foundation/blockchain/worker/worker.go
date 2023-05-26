@@ -5,6 +5,7 @@ package worker
 import (
 	"sync"
 
+	"github.com/ardanlabs/blockchain/foundation/blockchain/database"
 	"github.com/ardanlabs/blockchain/foundation/blockchain/state"
 )
 
@@ -17,6 +18,7 @@ type Worker struct {
 	shut         chan struct{}
 	startMining  chan bool
 	cancelMining chan bool
+	txSharing    chan database.BlockTx
 	evHandler    state.EventHandler
 }
 
@@ -28,6 +30,7 @@ func Run(st *state.State, evHandler state.EventHandler) {
 		shut:         make(chan struct{}),
 		startMining:  make(chan bool, 1),
 		cancelMining: make(chan bool, 1),
+		txSharing:    make(chan database.BlockTx, maxTxShareRequests),
 		evHandler:    evHandler,
 	}
 
@@ -40,6 +43,8 @@ func Run(st *state.State, evHandler state.EventHandler) {
 	// Load the set of operations we need to run.
 	operations := []func(){
 		w.powOperations,
+		w.shareTxOperations,
+
 	}
 
 	// Set waitgroup to match the number of G's we need for the set
@@ -62,6 +67,17 @@ func Run(st *state.State, evHandler state.EventHandler) {
 	// Wait for the G's to report they are running.
 	for i := 0; i < g; i++ {
 		<-hasStarted
+	}
+}
+
+// SignalShareTx signals a share transaction operation. If
+// maxTxShareRequests signals exist in the channel, we won't send these.
+func (w *Worker) SignalShareTx(blockTx database.BlockTx) {
+	select {
+	case w.txSharing <- blockTx:
+		w.evHandler("worker: SignalShareTx: share Tx signaled")
+	default:
+		w.evHandler("worker: SignalShareTx: queue full, transactions won't be shared.")
 	}
 }
 
