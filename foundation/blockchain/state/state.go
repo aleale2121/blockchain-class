@@ -29,6 +29,7 @@ type Worker interface {
 type Config struct {
 	BeneficiaryID  database.AccountID
 	Genesis        genesis.Genesis
+	Storage        database.Storage
 	EvHandler      EventHandler
 	SelectStrategy string
 }
@@ -44,7 +45,7 @@ type State struct {
 	genesis genesis.Genesis
 	db      *database.Database
 
-	Worker  Worker
+	Worker Worker
 }
 
 // New constructs a new blockchain for data management.
@@ -58,7 +59,7 @@ func New(cfg Config) (*State, error) {
 	}
 
 	// Access the storage for the blockchain.
-	db, err := database.New(cfg.Genesis, ev)
+	db, err := database.New(cfg.Genesis, cfg.Storage, ev)
 	if err != nil {
 		return nil, err
 	}

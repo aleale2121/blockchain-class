@@ -15,6 +15,7 @@ import (
 	"github.com/ardanlabs/blockchain/foundation/blockchain/genesis"
 	"github.com/ardanlabs/blockchain/foundation/blockchain/nameservice"
 	"github.com/ardanlabs/blockchain/foundation/blockchain/state"
+	"github.com/ardanlabs/blockchain/foundation/blockchain/storage/disk"
 	"github.com/ardanlabs/blockchain/foundation/blockchain/worker"
 	"github.com/ardanlabs/blockchain/foundation/logger"
 	"github.com/ardanlabs/conf/v3"
@@ -65,6 +66,7 @@ func run(log *zap.SugaredLogger) error {
 		State struct {
 			Beneficiary    string `conf:"default:miner1"` // Change to POA to run Proof of Authority
 			SelectStrategy string `conf:"default:Tip"`
+			DBPath         string   `conf:"default:zblock/miner1/"`
 		}
 		NameService struct {
 			Folder string `conf:"default:zblock/accounts/"`
@@ -144,6 +146,12 @@ func run(log *zap.SugaredLogger) error {
 
 	}
 
+	// Construct the use of disk storage.
+	storage, err := disk.New(cfg.State.DBPath)
+	if err != nil {
+		return err
+	}
+
 	// Load the genesis file for blockchain settings and origin balances.
 	genesis, err := genesis.Load()
 	if err != nil {
@@ -155,6 +163,7 @@ func run(log *zap.SugaredLogger) error {
 	state, err := state.New(state.Config{
 		BeneficiaryID:  database.PublicKeyToAccountID(privateKey.PublicKey),
 		Genesis:        genesis,
+		Storage:        storage,
 		EvHandler:      ev,
 		SelectStrategy: cfg.State.SelectStrategy,
 	})
