@@ -8,6 +8,7 @@ import (
 	"github.com/ardanlabs/blockchain/foundation/blockchain/database"
 	"github.com/ardanlabs/blockchain/foundation/blockchain/genesis"
 	"github.com/ardanlabs/blockchain/foundation/blockchain/mempool"
+	"github.com/ardanlabs/blockchain/foundation/blockchain/peer"
 )
 
 // =============================================================================
@@ -27,9 +28,12 @@ type Worker interface {
 // Config represents the configuration required to start
 // the blockchain node.
 type Config struct {
-	BeneficiaryID  database.AccountID
+	BeneficiaryID database.AccountID
+	Host          string
+
 	Genesis        genesis.Genesis
 	Storage        database.Storage
+	KnownPeers     *peer.PeerSet
 	EvHandler      EventHandler
 	SelectStrategy string
 }
@@ -39,11 +43,13 @@ type State struct {
 	mu sync.RWMutex
 
 	beneficiaryID database.AccountID
+	host          string
 	evHandler     EventHandler
 	mempool       *mempool.Mempool
 
-	genesis genesis.Genesis
-	db      *database.Database
+	knownPeers *peer.PeerSet
+	genesis    genesis.Genesis
+	db         *database.Database
 
 	Worker Worker
 }
@@ -72,9 +78,12 @@ func New(cfg Config) (*State, error) {
 
 	// Create the State to provide support for managing the blockchain.
 	state := State{
+		mu:            sync.RWMutex{},
 		beneficiaryID: cfg.BeneficiaryID,
+		host:          cfg.Host,
 		evHandler:     ev,
 		mempool:       mempool,
+		knownPeers:    cfg.KnownPeers,
 		genesis:       cfg.Genesis,
 		db:            db,
 	}
@@ -100,6 +109,11 @@ func (s *State) Shutdown() error {
 	// Wait for any resync to finish.
 	// s.resyncWG.Wait()
 	return nil
+}
+
+// Host returns a copy of host information.
+func (s *State) Host() string {
+	return s.host
 }
 
 // Genesis returns a copy of the genesis information.
@@ -130,4 +144,28 @@ func (s *State) Accounts() map[database.AccountID]database.Account {
 // LatestBlock returns a copy the current latest block.
 func (s *State) LatestBlock() database.Block {
 	return s.db.LatestBlock()
+}
+
+// AddKnownPeer provides the ability to add a new peer to
+// the known peer list.
+func (s *State) AddKnownPeer(peer peer.Peer) bool {
+	return s.knownPeers.Add(peer)
+}
+
+// RemoveKnownPeer provides the ability to remove a peer from
+// the known peer list.
+func (s *State) RemoveKnownPeer(peer peer.Peer) {
+	s.knownPeers.Remove(peer)
+}
+
+// KnownExternalPeers retrieves a copy of the known peer list without
+// including this node.
+func (s *State) KnownExternalPeers() []peer.Peer {
+	return s.knownPeers.Copy(s.host)
+}
+
+// KnownPeers retrieves a copy of the full known peer list which includes
+// this node as well. Used by the PoA selection algorithm.
+func (s *State) KnownPeers() []peer.Peer {
+	return s.knownPeers.Copy("")
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/ardanlabs/blockchain/foundation/blockchain/database"
 	"github.com/ardanlabs/blockchain/foundation/blockchain/genesis"
 	"github.com/ardanlabs/blockchain/foundation/blockchain/nameservice"
+	"github.com/ardanlabs/blockchain/foundation/blockchain/peer"
 	"github.com/ardanlabs/blockchain/foundation/blockchain/state"
 	"github.com/ardanlabs/blockchain/foundation/blockchain/storage/disk"
 	"github.com/ardanlabs/blockchain/foundation/blockchain/worker"
@@ -64,9 +65,11 @@ func run(log *zap.SugaredLogger) error {
 			PrivateHost     string        `conf:"default:0.0.0.0:9080"`
 		}
 		State struct {
-			Beneficiary    string `conf:"default:miner1"` // Change to POA to run Proof of Authority
-			SelectStrategy string `conf:"default:Tip"`
+			Beneficiary    string   `conf:"default:miner1"` // Change to POA to run Proof of Authority
+			SelectStrategy string   `conf:"default:Tip"`
 			DBPath         string   `conf:"default:zblock/miner1/"`
+			OriginPeers    []string `conf:"default:0.0.0.0:9080"` //
+
 		}
 		NameService struct {
 			Folder string `conf:"default:zblock/accounts/"`
@@ -135,6 +138,15 @@ func run(log *zap.SugaredLogger) error {
 	if err != nil {
 		return fmt.Errorf("unable to load private key for node: %w", err)
 	}
+
+	// A peer set is a collection of known nodes in the network so transactions
+	// and blocks can be shared.
+	peerSet := peer.NewPeerSet()
+	for _, host := range cfg.State.OriginPeers {
+		peerSet.Add(peer.New(host))
+	}
+	peerSet.Add(peer.New(cfg.Web.PrivateHost))
+
 	// The blockchain packages accept a function of this signature to allow the
 	// application to log. For now, these raw messages are sent to any websocket
 	// client that is connected into the system through the events package.
@@ -162,9 +174,11 @@ func run(log *zap.SugaredLogger) error {
 	// database and provides an API for application support.
 	state, err := state.New(state.Config{
 		BeneficiaryID:  database.PublicKeyToAccountID(privateKey.PublicKey),
+		Host:           cfg.Web.PrivateHost,
 		Genesis:        genesis,
 		Storage:        storage,
 		EvHandler:      ev,
+		KnownPeers:     peerSet,
 		SelectStrategy: cfg.State.SelectStrategy,
 	})
 	if err != nil {
@@ -247,6 +261,8 @@ func run(log *zap.SugaredLogger) error {
 	privateMux := handlers.PrivateMux(handlers.MuxConfig{
 		Shutdown: shutdown,
 		Log:      log,
+		State:    state,
+		NS:       ns,
 	})
 
 	// Construct a server to service the requests against the mux.

@@ -4,14 +4,9 @@ package worker
 
 import (
 	"sync"
-	"time"
 
 	"github.com/ardanlabs/blockchain/foundation/blockchain/state"
 )
-
-// peerUpdateInterval represents the interval of finding new peer nodes
-// and updating the blockchain on disk with missing blocks.
-const peerUpdateInterval = time.Second * 10
 
 // =============================================================================
 
@@ -38,6 +33,9 @@ func Run(st *state.State, evHandler state.EventHandler) {
 
 	// Register this worker with the state package.
 	st.Worker = &w
+
+	// Update this node before starting any support G's.
+	w.Sync()
 
 	// Load the set of operations we need to run.
 	operations := []func(){
